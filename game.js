@@ -2,6 +2,8 @@ var c = document.getElementById("gameCanvas");
 var context = c.getContext("2d");
 
 
+var time = 0;
+var tick = 0;
 
 var gold = 0;
 var gravity = .5;
@@ -11,6 +13,7 @@ var spr_player = new Image();
 var stone = new Image();
 var dirt = new Image();
 var grass = new Image();
+var wood = new Image();
 var cursor = new Image();
 
 var stone_sheet = new Image();
@@ -23,7 +26,7 @@ var mouse = {
 }
 
 cursor.src = "cursor.png";
-
+wood.src = "wood.png";
 stone.src = "stone.png";
 stone_sheet.src = "stone_sheet.png";
 dirt.src = "dirt.png";
@@ -67,25 +70,25 @@ document.addEventListener('mousedown', function(event) {
 
 function playerInput() {
 	if(key[38]) {
-		if((getTile(player.x,player.y - 16) == 3) && (moving == false)){
+		if((getWalkable(player.x,player.y - 16)) && (moving == false)){
 				player.yb -= 16;
 				moving = true;
 		}
 	}
 	if(key[40]) {
-		if((getTile(player.x,player.y + 16) == 3) && (moving == false)){
+		if((getWalkable(player.x,player.y + 16)) && (moving == false)){
 				player.yb += 16;
 				moving = true;
 		}
 	}
 	if(key[37]) {
-		if((getTile(player.x - 16,player.y) == 3) && (moving == false)){
+		if((getWalkable(player.x - 16,player.y)) && (moving == false)){
 				player.xb -= 16;
 				moving = true;
 		}
 	}
 	if(key[39]) {
-		if((getTile(player.x + 16,player.y) == 3) && (moving == false)){
+		if((getWalkable(player.x + 16,player.y)) && (moving == false)){
 				player.xb += 16;
 				moving = true;
 		}
@@ -94,9 +97,9 @@ function playerInput() {
 
 
 
-
 var map = [];
 var tileindex = [];
+
 for(i = 0; i < 480 / 16; i++) {
 	map[i] = []
 	tileindex[i] = [];
@@ -114,8 +117,39 @@ for(i = 0; i < 480 / 16; i++) {
 
 }
 
+map[7][11] = 4;
 
+var house = [
+	[3,3,3,3,3,3,3],
+	[3,1,1,1,1,1,3],
+	[3,1,5,5,5,1,3],
+	[3,1,5,5,5,1,3],
+	[3,1,5,5,5,1,3],
+	[3,1,1,3,1,1,3],
+	[3,3,3,3,3,3,3]
+];
 
+//check for structures
+checkStructures();
+function checkStructures () {
+	for(vert = 0; vert < 480 / 16; vert++) {
+		for(horiz = 0; horiz < 640 / 16; horiz++) {
+			if(map[vert][horiz] == 4) {
+				console.log("found structure @ " + horiz + ", " + vert);
+				//4 is a house
+				for(vertbuild = 0; vertbuild < house.length; vertbuild++) {
+					for(horizbuild = 0; horizbuild < house[vertbuild].length; horizbuild ++) {
+						map[vert + vertbuild][horiz + horizbuild] = house[vertbuild][horizbuild];
+					}
+					
+				}
+			}
+		}
+	}
+}
+
+setIndex();
+function setIndex() {
 for(a = 0; a < 480 / 16; a++) {
 	//console.log("scanning vertical");
 	for(b = 0; b < 640 / 16; b++) {
@@ -146,6 +180,7 @@ for(a = 0; a < 480 / 16; a++) {
 	}
 	
 }
+}
 
 i = 0;
 j = 0;
@@ -162,6 +197,8 @@ function drawMap() {
 				context.drawImage(dirt,j * 16, i * 16);
 			} else if(map[i][j] == 3) {
 				context.drawImage(grass,j * 16, i * 16);
+			} else if(map[i][j] == 5) {
+				context.drawImage(wood,j * 16, i * 16);
 			}
 		}
 	}
@@ -174,6 +211,33 @@ function getTile(x,y) {
 		if(i == y / 16) {
 			if(j == x / 16) {
 				result = map[i][j];
+				
+			}
+		}
+	}
+	
+	
+}
+return result;
+}
+
+function getWalkable(x,y) {
+	var result = false;
+	for(i = 0; i < 480 / 16; i++) {
+	for(j = 0; j < 640 / 16; j++) {
+		if(i == y / 16) {
+			if(j == x / 16) {
+				switch(map[i][j]) {
+					case 1:
+						result = false;
+						break;
+					case 2:
+
+					case 5:
+					case 3:
+						result = true;
+						break;
+				}
 				
 			}
 		}
@@ -233,6 +297,11 @@ requestAnimationFrame(loop);
 
 
 function loop() {
+	time += 1;
+	if (time % 60 == 0) {
+		tick += 1;
+		time = 0;
+	}
 	context.clearRect(0, 0, c.width, c.height);
 	drawMap();
 	//input();
@@ -240,6 +309,7 @@ function loop() {
 	movePlayer();
 	drawPlayer();
 	context.drawImage(cursor,mouse.x,mouse.y,16,16);
+	context.fillText("Time: " + time + " tick: " + tick,10,30);
 	//context.clearRect(0,0,800,600);
 	//context.font="20px Georgia";
 	//context.fillStyle="gold";
