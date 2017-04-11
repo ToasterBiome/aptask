@@ -11,6 +11,8 @@ var gravity = .3;
 var spr_player = new Image();
 var player_sheet = new Image();
 
+var goblin_sheet = new Image();
+
 var stone = new Image();
 var dirt = new Image();
 var grass = new Image();
@@ -35,6 +37,28 @@ function Tile(name,sprite,walkable) {
 	tile.push(this);
 }
 
+function Structure(name, array) {
+	this.name = name;
+	this.sprite = spr_player;
+	this.array = array;
+	tile.push(this);
+}
+
+enemy = [];
+
+function Enemy(name,type,sprite,hp,x,y,xb,yb,moving,spd) {
+	this.name = name;
+	this.type = type;
+	this.sprite = sprite;
+	this.hp = hp;
+	this.x = x;
+	this.y = y;
+	this.xb = xb;
+	this.yb = yb;
+	this.moving = false;
+	this.spd = spd;
+	enemy.push(this);
+}
 
 
 cursor.src = "cursor.png";
@@ -46,6 +70,7 @@ grass.src = "grass.png";
 
 spr_player.src = "player.png";
 player_sheet.src = "player_sheet.png";
+goblin_sheet.src = "goblin_sheet.png";
 var width = 640;
 var height = 480;
 
@@ -83,7 +108,85 @@ var stoneTile = new Tile("stoneTile",stone_sheet,false);
 var dirtTile = new Tile("dirtTile",dirt,true);
 var woodTile = new Tile("woodTile",wood,true);
 
+var house = [
+	[0,0,0,0,0,0,0],
+	[0,1,1,1,1,1,0],
+	[0,1,3,3,3,1,0],
+	[0,1,3,3,3,1,0],
+	[0,1,3,3,3,1,0],
+	[0,1,1,0,1,1,0],
+	[0,0,0,0,0,0,0]
+];
 
+var smiley = [
+	[0,0,0,0,0,0,0],
+	[0,0,0,0,0,0,0],
+	[0,0,1,0,1,0,0],
+	[0,0,0,0,0,0,0],
+	[0,1,0,0,0,1,0],
+	[0,0,1,1,1,0,0],
+	[0,0,0,0,0,0,0]
+];
+
+var statue = [
+	[0,0,0,0,0,0,0],
+	[0,1,1,1,1,1,0],
+	[0,1,0,1,0,1,0],
+	[0,0,1,1,1,0,0],
+	[0,1,0,1,0,1,0],
+	[0,1,1,1,1,1,0],
+	[0,0,0,0,0,0,0]
+];
+
+
+
+var s_house = new Structure("house",house);
+var s_smiley = new Structure("smiley",smiley);
+var s_statue = new Structure("statue",statue);
+
+var peggy = new Enemy("peggy","goblin",goblin_sheet,20,32,64,32,64,false,1);
+
+function aiMovement() {
+	//get enemy
+	console.log("calling");
+	var i = 0;
+	for(i = 0; i < enemy.length; i++) {
+			//decide on a direction to go
+		var dir = Math.floor(Math.random() * 3); 
+			switch(dir) {
+				case 0: //up
+					if((tile[getTile(enemy[i].x,enemy[i].y - 16)].walkable) && (!enemy[i].moving)){
+						console.log(enemy[i].yb);
+						enemy[i].yb -= 16;
+						enemy[i].moving = true;
+						}
+					break;
+				case 1: //down
+					if((tile[getTile(enemy[i].x,enemy[i].y + 16)].walkable) && (!enemy[i].moving)){
+						console.log(enemy[i].yb);
+						enemy[i].yb += 16;
+						enemy[i].moving = true;
+						}
+					break;
+				case 2: //left
+					if((tile[getTile(enemy[i].x - 16,enemy[i].y)].walkable) && (!enemy[i].moving)){
+						console.log(enemy[i].yb);
+						enemy[i].xb += 16;
+						enemy[i].moving = true;
+						}
+					break;
+				case 3: //right
+					if((tile[getTile(enemy[i].x + 16,enemy[i].y )].walkable) && (!enemy[i].moving)){
+						console.log(enemy[i].yb);
+						enemy[i].xb -= 16;
+						enemy[i].moving = true;
+						}
+					break;
+			}
+	}
+
+	
+}
 
 function playerInput() {
 	if(key[38]) {
@@ -139,44 +242,26 @@ function generateMap() {
 		}
 
 	}
-	map[7][11] = 4;
+	map[7][11] = 6;
 }
 
 
 
 //map[7][11] = 4;
 
-var house = [
-	[0,0,0,0,0,0,0],
-	[0,1,1,1,1,1,0],
-	[0,1,3,3,3,1,0],
-	[0,1,3,3,3,1,0],
-	[0,1,3,3,3,1,0],
-	[0,1,1,0,1,1,0],
-	[0,0,0,0,0,0,0]
-];
-
-var smiley = [
-	[0,0,0,0,0,0,0],
-	[0,0,0,0,0,0,0],
-	[0,0,1,0,1,0,0],
-	[0,0,0,0,0,0,0],
-	[0,1,0,0,0,1,0],
-	[0,0,1,1,1,0,0],
-	[0,0,0,0,0,0,0]
-];
 
 //check for structures
 checkStructures();
 function checkStructures () {
 	for(vert = 0; vert < 480 / 16; vert++) {
 		for(horiz = 0; horiz < 640 / 16; horiz++) {
-			if(map[vert][horiz] == 4) {
+			if(tile[map[vert][horiz]] instanceof Structure == true) {
+				struct = tile[map[vert][horiz]].array;
 				console.log("found structure @ " + horiz + ", " + vert);
 				//4 is a house
-				for(vertbuild = 0; vertbuild < house.length; vertbuild++) {
-					for(horizbuild = 0; horizbuild < house[vertbuild].length; horizbuild ++) {
-						map[vert + vertbuild][horiz + horizbuild] = house[vertbuild][horizbuild];
+				for(vertbuild = 0; vertbuild < struct.length; vertbuild++) {
+					for(horizbuild = 0; horizbuild < struct[vertbuild].length; horizbuild ++) {
+						map[vert + vertbuild][horiz + horizbuild] = struct[vertbuild][horizbuild];
 					}
 					
 				}
@@ -272,10 +357,24 @@ function movePlayer() {
 	if(player.x == player.xb && player.y == player.yb) {
 		moving = false;
 	}
+	for(i = 0; i < enemy.length; i++) {
+		if(enemy[i].x != enemy[i].xb) {
+		enemy[i].x += enemy[i].spd * Math.sign(enemy[i].xb - enemy[i].x);
+			} 
+			if(enemy[i].y != enemy[i].yb) {
+		enemy[i].y += enemy[i].spd * Math.sign(enemy[i].yb - enemy[i].y);
+			} 
+			if(enemy[i].x == enemy[i].xb && enemy[i].y == enemy[i].yb) {
+		moving = false;
+			}
+	}
 }
 
-function drawPlayer() {
+function drawEntities() {
 		context.drawImage(player_sheet,(tick % 4) * 16,0,16,16,player.x,player.y,16,16);
+		for(i = 0; i < enemy.length; i++) {
+			context.drawImage(enemy[i].sprite,(tick % 4) * 16,0,16,16,enemy[i].x,enemy[i].y,16,16)
+		}
 
 	//context.drawImage(player.sprite,player.x,player.y,16,16);
 }
@@ -297,19 +396,15 @@ function loop() {
 	if (time % 30 == 0) {
 		tick += 1;
 		time = 0;
+		aiMovement();
 	}
 	context.clearRect(0, 0, c.width, c.height);
 	drawMap();
 	//input();
 	playerInput();
 	movePlayer();
-	drawPlayer();
+	drawEntities();
 	context.drawImage(cursor,mouse.x,mouse.y,16,16);
 	context.fillText("Time: " + time + " tick: " + tick,10,30);
-	//context.clearRect(0,0,800,600);
-	//context.font="20px Georgia";
-	//context.fillStyle="gold";
-	//context.fillText("Gold: " + gold,10,30);
-	
 	requestAnimationFrame(loop);
 }
