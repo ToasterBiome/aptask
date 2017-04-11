@@ -6,7 +6,7 @@ var time = 0;
 var tick = 0;
 
 var gold = 0;
-var gravity = .5;
+var gravity = .3;
 
 var spr_player = new Image();
 
@@ -25,6 +25,17 @@ var mouse = {
 	y: 0
 }
 
+tile = [];
+
+function Tile(name,sprite,walkable) {
+	this.name = name;
+	this.sprite = sprite;
+	this.walkable = walkable;
+	tile.push(this);
+}
+
+
+
 cursor.src = "cursor.png";
 wood.src = "wood.png";
 stone.src = "stone.png";
@@ -32,16 +43,16 @@ stone_sheet.src = "stone_sheet.png";
 dirt.src = "dirt.png";
 grass.src = "grass.png";
 
-spr_player.src = "player.png"
+spr_player.src = "player.png";
 var width = 640;
 var height = 480;
 
 var player = {
 	sprite: spr_player,
-	x: 0,
-	y: 0,
-	xb: 0,
-	yb: 0,
+	x: 16,
+	y: 16,
+	xb: 16,
+	yb: 16,
 	spd: 2,
 	moving: false
 }
@@ -61,72 +72,96 @@ document.addEventListener('mousemove', function(event) {
 });
 
 document.addEventListener('mousedown', function(event) {
-	console.log("tile: " + getTile(mouse.x,mouse.y));
+	console.log(tile[getTile(mouse.x,mouse.y)]);
 	console.log("tileindex: " + getTileIndex(mouse.x,mouse.y));
 });
 
+var grassTile = new Tile("grassTile",grass,true);
+var stoneTile = new Tile("stoneTile",stone_sheet,false);
+var dirtTile = new Tile("dirtTile",dirt,true);
+var woodTile = new Tile("woodTile",wood,true);
 
 
 
 function playerInput() {
 	if(key[38]) {
-		if((getWalkable(player.x,player.y - 16)) && (moving == false)){
+		if((tile[getTile(player.x,player.y - 16)].walkable) && (moving == false)){
 				player.yb -= 16;
 				moving = true;
 		}
 	}
 	if(key[40]) {
-		if((getWalkable(player.x,player.y + 16)) && (moving == false)){
+		if((tile[getTile(player.x ,player.y + 16)].walkable) && (moving == false)){
 				player.yb += 16;
 				moving = true;
 		}
 	}
 	if(key[37]) {
-		if((getWalkable(player.x - 16,player.y)) && (moving == false)){
+		if((tile[getTile(player.x - 16,player.y)].walkable) && (moving == false)){
 				player.xb -= 16;
 				moving = true;
 		}
 	}
 	if(key[39]) {
-		if((getWalkable(player.x + 16,player.y)) && (moving == false)){
+		if((tile[getTile(player.x + 16,player.y)].walkable) && (moving == false)){
 				player.xb += 16;
 				moving = true;
 		}
 	}
 }
 
-
-
 var map = [];
 var tileindex = [];
 
-for(i = 0; i < 480 / 16; i++) {
-	map[i] = []
-	tileindex[i] = [];
-	for(j = 0; j < 640 / 16; j++) {
-		r = Math.random();
-		if (r > .1 && r < .9) {
-			map[i][j] = 3;
-		} else if (r > .99){
-			map[i][j] = 2;
-		} else {
-			map[i][j] = 1;
+generateMap()
+function generateMap() {	
+	for(i = 0; i < 30; i++) {
+		map[i] = [];
+		tileindex[i] = [];
+		for(j = 0; j < 40; j++) {
+			r = Math.random();
+			if (r > .1 && r < .9) {
+				map[i][j] = 0;
+			} else if (r > .99){
+				map[i][j] = 2;
+			} else {
+				map[i][j] = 1;
+			}
+			if(i == 0 || i == 29) {
+				map[i][j] = 1;
+			}
+			if (j == 0 || j == 39) {
+				map[i][j] = 1;
+			}
+			tileindex[i][j] = 0;
 		}
-		tileindex[i][j] = 0;
-	}
 
+	}
+	map[7][11] = 4;
 }
 
-map[7][11] = 4;
+
+
+//map[7][11] = 4;
 
 var house = [
-	[3,3,3,3,3,3,3],
-	[3,1,1,1,1,1,3],
-	[3,1,5,5,5,1,3],
-	[3,1,5,5,5,1,3],
-	[3,1,5,5,5,1,3],
-	[3,1,1,3,1,1,3],
-	[3,3,3,3,3,3,3]
+	[0,0,0,0,0,0,0],
+	[0,1,1,1,1,1,0],
+	[0,1,3,3,3,1,0],
+	[0,1,3,3,3,1,0],
+	[0,1,3,3,3,1,0],
+	[0,1,1,0,1,1,0],
+	[0,0,0,0,0,0,0]
+];
+
+var smiley = [
+	[0,0,0,0,0,0,0],
+	[0,0,0,0,0,0,0],
+	[0,0,1,0,1,0,0],
+	[0,0,0,0,0,0,0],
+	[0,1,0,0,0,1,0],
+	[0,0,1,1,1,0,0],
+	[0,0,0,0,0,0,0]
 ];
 
 //check for structures
@@ -182,24 +217,11 @@ for(a = 0; a < 480 / 16; a++) {
 }
 }
 
-i = 0;
-j = 0;
-
 
 function drawMap() {
-	for(i = 0; i < map.length; i++) {
+	for(i = 0; i < map.length; i++ ) {
 		for(j = 0; j < map[i].length; j++) {
-			if(Math.floor(map[i][j]) == 1) {
-				//context.drawImage(stone,j * 16, i * 16);
-				//draw stone based on tileindex
-				context.drawImage(stone_sheet,tileindex[i][j] * 16,0,16,16,j*16,i*16,16,16);
-			} else if(map[i][j] == 2) {
-				context.drawImage(dirt,j * 16, i * 16);
-			} else if(map[i][j] == 3) {
-				context.drawImage(grass,j * 16, i * 16);
-			} else if(map[i][j] == 5) {
-				context.drawImage(wood,j * 16, i * 16);
-			}
+			context.drawImage(tile[map[i][j]].sprite,tileindex[i][j] * 16,0,16,16,j*16,i*16,16,16);
 		}
 	}
 }
@@ -207,45 +229,15 @@ function drawMap() {
 function getTile(x,y) {
 	var result = 0;
 	for(i = 0; i < 480 / 16; i++) {
-	for(j = 0; j < 640 / 16; j++) {
-		if(i == y / 16) {
-			if(j == x / 16) {
-				result = map[i][j];
-				
-			}
-		}
-	}
-	
-	
-}
-return result;
-}
-
-function getWalkable(x,y) {
-	var result = false;
-	for(i = 0; i < 480 / 16; i++) {
-	for(j = 0; j < 640 / 16; j++) {
-		if(i == y / 16) {
-			if(j == x / 16) {
-				switch(map[i][j]) {
-					case 1:
-						result = false;
-						break;
-					case 2:
-
-					case 5:
-					case 3:
-						result = true;
-						break;
+		for(j = 0; j < 640 / 16; j++) {
+			if(i == y / 16) {
+				if(j == x / 16) {
+					result = map[i][j];
 				}
-				
 			}
 		}
 	}
-	
-	
-}
-return result;
+	return result;
 }
 
 function getTileIndex(x,y) {
