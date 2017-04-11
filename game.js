@@ -94,8 +94,8 @@ window.addEventListener('keyup',function(e){
 },true);
 
 document.addEventListener('mousemove', function(event) {
-	mouse.x = (Math.floor(event.clientX / 16) * 16);
-	mouse.y = (Math.floor(event.clientY / 16) * 16);
+	mouse.x = (Math.floor(event.layerX / 16) * 16);
+	mouse.y = (Math.floor(event.layerY / 16) * 16);
 });
 
 document.addEventListener('mousedown', function(event) {
@@ -148,7 +148,6 @@ var peggy = new Enemy("peggy","goblin",goblin_sheet,20,32,64,32,64,false,1);
 
 function aiMovement() {
 	//get enemy
-	console.log("calling");
 	var i = 0;
 	for(i = 0; i < enemy.length; i++) {
 			//decide on a direction to go
@@ -156,31 +155,27 @@ function aiMovement() {
 			switch(dir) {
 				case 0: //up
 					if((tile[getTile(enemy[i].x,enemy[i].y - 16)].walkable) && (!enemy[i].moving)){
-						console.log(enemy[i].yb);
 						enemy[i].yb -= 16;
 						enemy[i].moving = true;
 						}
 					break;
 				case 1: //down
 					if((tile[getTile(enemy[i].x,enemy[i].y + 16)].walkable) && (!enemy[i].moving)){
-						console.log(enemy[i].yb);
 						enemy[i].yb += 16;
 						enemy[i].moving = true;
 						}
 					break;
 				case 2: //left
-					if((tile[getTile(enemy[i].x - 16,enemy[i].y)].walkable) && (!enemy[i].moving)){
-						console.log(enemy[i].yb);
+					if((tile[getTile(enemy[i].x + 16,enemy[i].y)].walkable) && (!enemy[i].moving)){
 						enemy[i].xb += 16;
 						enemy[i].moving = true;
 						}
 					break;
 				case 3: //right
-					if((tile[getTile(enemy[i].x + 16,enemy[i].y )].walkable) && (!enemy[i].moving)){
-						console.log(enemy[i].yb);
+					if((tile[getTile(enemy[i].x - 16,enemy[i].y )].walkable) && (!enemy[i].moving)){
 						enemy[i].xb -= 16;
 						enemy[i].moving = true;
-						}
+					}
 					break;
 			}
 	}
@@ -225,7 +220,7 @@ function generateMap() {
 		tileindex[i] = [];
 		for(j = 0; j < 40; j++) {
 			r = Math.random();
-			if (r > .1 && r < .9) {
+			if (r > .1 && r < .95) {
 				map[i][j] = 0;
 			} else if (r > .99){
 				map[i][j] = 2;
@@ -365,7 +360,7 @@ function movePlayer() {
 		enemy[i].y += enemy[i].spd * Math.sign(enemy[i].yb - enemy[i].y);
 			} 
 			if(enemy[i].x == enemy[i].xb && enemy[i].y == enemy[i].yb) {
-		moving = false;
+				enemy[i].moving = false;
 			}
 	}
 }
