@@ -9,6 +9,7 @@ var gold = 0;
 var gravity = .3;
 
 var spr_player = new Image();
+var player_sheet = new Image();
 
 var stone = new Image();
 var dirt = new Image();
@@ -44,6 +45,7 @@ dirt.src = "dirt.png";
 grass.src = "grass.png";
 
 spr_player.src = "player.png";
+player_sheet.src = "player_sheet.png";
 var width = 640;
 var height = 480;
 
@@ -273,7 +275,9 @@ function movePlayer() {
 }
 
 function drawPlayer() {
-	context.drawImage(player.sprite,player.x,player.y,16,16);
+		context.drawImage(player_sheet,(tick % 4) * 16,0,16,16,player.x,player.y,16,16);
+
+	//context.drawImage(player.sprite,player.x,player.y,16,16);
 }
 
 
@@ -290,7 +294,7 @@ requestAnimationFrame(loop);
 
 function loop() {
 	time += 1;
-	if (time % 60 == 0) {
+	if (time % 30 == 0) {
 		tick += 1;
 		time = 0;
 	}
