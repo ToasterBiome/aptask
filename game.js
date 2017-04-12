@@ -66,6 +66,17 @@ function Enemy(name,type,sprite,hp,x,y,xb,yb,moving,spd,roaming) {
 	enemy.push(this);
 }
 
+popup = [];
+
+function Popup(text,x,y,timer,color,moves) {
+	this.text = text;
+	this.x = x;
+	this.y = y;
+	this.timer = timer;
+	this.color = color;
+	this.moves = moves;
+	popup.push(this);
+}
 
 cursor.src = "cursor.png";
 wood.src = "wood.png";
@@ -101,8 +112,10 @@ window.addEventListener('keyup',function(e){
 },true);
 
 document.addEventListener('mousemove', function(event) {
-	mouse.x = (Math.floor(event.layerX / 16) * 16);
-	mouse.y = (Math.floor(event.layerY / 16) * 16);
+		mouse.x = (Math.floor(event.layerX / 16) * 16);
+		mouse.y = (Math.floor(event.layerY / 16) * 16);
+
+	
 });
 
 document.addEventListener('mousedown', function(event) {
@@ -215,10 +228,10 @@ function combat() {
 				switch(hit) {
 					case 0:
 						//hit!
-						
 						sword_hit.play();
 						enemy[e].hp -= player.dmg;
-						console.log("hit! remaining hp: " + enemy[e].hp);
+						//console.log("hit! remaining hp: " + enemy[e].hp);
+						new Popup("1",enemy[e].x + 4,enemy[e].y,30,"#ff0000",true);
 						if(enemy[e].hp <= 0) {
 							delete enemy[e].name;
 							enemy.splice(e,1);
@@ -227,7 +240,8 @@ function combat() {
 						break;
 					case 1:
 						//miss..
-						console.log("miss.. remaining hp: " + enemy[e].hp);
+						//console.log("miss.. remaining hp: " + enemy[e].hp);
+						new Popup("0",enemy[e].x + 4,enemy[e].y,30,"#0000ff",true);
 						sword_miss.play();
 						break;
 				}
@@ -426,6 +440,21 @@ function drawEntities() {
 	//context.drawImage(player.sprite,player.x,player.y,16,16);
 }
 
+function drawPopups() {
+	for(i = 0; i < popup.length; i++) {
+		context.font = "8px Sans-serif"
+		context.fillStyle = popup[i].color;
+		context.strokeText(popup[i].text,popup[i].x,popup[i].y);
+		context.fillText(popup[i].text,popup[i].x,popup[i].y);
+		popup[i].timer -= 1;
+		popup[i].y -= .25;
+		if(popup[i].timer == 0) {
+			delete popup[i];
+			popup.splice(i,1);
+		}
+	}
+}
+
 function loop() {
 	setTimeout(function() {
 	requestAnimationFrame(loop);
@@ -443,8 +472,10 @@ function loop() {
 	playerInput();
 	movePlayer();
 	drawEntities();
+	drawPopups();
 	context.drawImage(cursor,mouse.x,mouse.y,16,16);
-	context.fillText("Time: " + Math.floor(time) + " tick: " + tick,10,30);
+	context.fillStyle = "#ffff00";
+	context.fillText("Time: " + Math.floor(time) + " tick: " + tick,10,450);
 	//requestAnimationFrame(loop);
 	}, 1000 / 60);
 }
