@@ -1,6 +1,7 @@
 var c = document.getElementById("gameCanvas");
 var context = c.getContext("2d");
 
+var lastLoop = new Date;
 
 var time = 0;
 var tick = 0;
@@ -51,18 +52,18 @@ function Structure(name, array) {
 
 enemy = [];
 
-function Enemy(name,type,sprite,hp,x,y,xb,yb,moving,spd,roaming) {
+function Enemy(name,type,sprite,hp,x,y,moving,spd,roaming) {
 	this.name = name;
 	this.type = type;
 	this.sprite = sprite;
 	this.hp = hp;
 	this.x = x;
 	this.y = y;
-	this.xb = xb;
-	this.yb = yb;
+	this.xb = x;
+	this.yb = y;
 	this.moving = false;
 	this.spd = spd;
-	this.roaming = false;
+	this.roaming = roaming;
 	enemy.push(this);
 }
 
@@ -164,8 +165,8 @@ var s_house = new Structure("house",house);
 var s_smiley = new Structure("smiley",smiley);
 var s_statue = new Structure("statue",statue);
 
-var peggy = new Enemy("peggy","goblin",goblin_sheet,4,16,32,16,32,false,1);
-var stabby = new Enemy("stabby","goblin",goblin_sheet,4,32,32,32,32,false,1);
+//var peggy = new Enemy("peggy","goblin",goblin_sheet,4,16,32,16,32,false,1);
+//var stabby = new Enemy("stabby","goblin",goblin_sheet,4,32,32,32,32,false,1);
 
 
 var map = [];
@@ -173,6 +174,7 @@ var tileindex = [];
 
 generateMap();
 checkStructures();
+generateMonsters();
 
 drawMap();
 keys = [];
@@ -214,6 +216,20 @@ function aiMovement() {
 					break;
 			}
 		}
+		for(a = 0; a < enemy.length; a++) {
+			if((enemy[a].x == enemy[i].x + 16) && (enemy[a].y == enemy[i].y)) {
+				enemy[i].xb = enemy[i].x;
+			}
+			if((enemy[a].x == enemy[i].x - 16) && (enemy[a].y == enemy[i].y)){
+				enemy[i].xb = enemy[i].x;
+			}
+			if((enemy[a].y == enemy[i].y - 16) && (enemy[a].x == enemy[i].x)){
+				enemy[i].yb = enemy[i].y;
+			}
+			if((enemy[a].y == enemy[i].y + 16) && (enemy[a].x == enemy[i].x)){
+				enemy[i].yb = enemy[i].y;
+			}
+		}
 	}
 	
 }
@@ -231,17 +247,17 @@ function combat() {
 						sword_hit.play();
 						enemy[e].hp -= player.dmg;
 						//console.log("hit! remaining hp: " + enemy[e].hp);
-						new Popup("1",enemy[e].x + 4,enemy[e].y,30,"#ff0000",true);
+						new Popup("1",enemy[e].x + 6,enemy[e].y,30,"#ff0000",true);
 						if(enemy[e].hp <= 0) {
 							delete enemy[e].name;
 							enemy.splice(e,1);
-
+							gold += Math.floor(Math.random() * 9);
 						}
 						break;
 					case 1:
 						//miss..
 						//console.log("miss.. remaining hp: " + enemy[e].hp);
-						new Popup("0",enemy[e].x + 4,enemy[e].y,30,"#0000ff",true);
+						new Popup("0",enemy[e].x + 6,enemy[e].y,30,"#0000ff",true);
 						sword_miss.play();
 						break;
 				}
@@ -279,6 +295,20 @@ function playerInput() {
 				player.moving = true;
 		}
 	}
+	for(a = 0; a < enemy.length; a++) {
+			if((enemy[a].x == player.x + 16) && (enemy[a].y == player.y)) {
+				player.xb = player.x;
+			}
+			if((enemy[a].x == player.x - 16) && (enemy[a].y == player.y)){
+				player.xb = player.x;
+			}
+			if((enemy[a].y == player.y - 16) && (enemy[a].x == player.x)){
+				player.yb = player.y;
+			}
+			if((enemy[a].y == player.y + 16) && (enemy[a].x == player.x)){
+				player.yb = player.y;
+			}
+		}
 }
 
 function generateMap() {	
@@ -289,7 +319,7 @@ function generateMap() {
 			r = Math.random();
 			if (r > .1 && r < .95) {
 				map[i][j] = 0;
-			} else if (r > .99){
+			} else if (r > .95){
 				map[i][j] = 2;
 			} else {
 				map[i][j] = 1;
@@ -305,6 +335,19 @@ function generateMap() {
 
 	}
 	map[7][11] = 6;
+}
+
+function generateMonsters() {
+	for(i = 0; i < 30; i++) {
+		for(j = 0; j < 40; j++) {
+			if(tile[map[i][j]].walkable) {
+				var rand = Math.random();
+				if(rand > .99) {
+					new Enemy("","goblin",goblin_sheet,4,j * 16,i * 16,false,1);
+				}
+			}
+		}
+	}
 }
 
 
@@ -433,7 +476,11 @@ function drawEntities() {
 		for(i = 0; i < enemy.length; i++) {
 			context.drawImage(enemy[i].sprite,(tick % 4) * 16,0,16,16,enemy[i].x,enemy[i].y,16,16)
 			if(enemy[i].roaming == false) {
-				context.drawImage(fighting_icon,enemy[i].x,enemy[i].y,8,8)
+				//context.drawImage(fighting_icon,enemy[i].x,enemy[i].y,8,8)
+				context.fillStyle = "#000000";
+				context.fillRect(enemy[i].x,enemy[i].y + 14,16,2);
+				context.fillStyle = "#00FF00";
+				context.fillRect(enemy[i].x,enemy[i].y + 14,(enemy[i].hp / 4) * 16,2);
 			}
 		}
 
@@ -444,16 +491,19 @@ function drawPopups() {
 	for(i = 0; i < popup.length; i++) {
 		context.font = "8px Sans-serif"
 		context.fillStyle = popup[i].color;
-		context.strokeText(popup[i].text,popup[i].x,popup[i].y);
+		//context.strokeText(popup[i].text,popup[i].x,popup[i].y);
 		context.fillText(popup[i].text,popup[i].x,popup[i].y);
 		popup[i].timer -= 1;
-		popup[i].y -= .25;
+		if(popup[i].moving) {
+			popup[i].y -= .25;
+		}	
 		if(popup[i].timer == 0) {
 			delete popup[i];
 			popup.splice(i,1);
 		}
 	}
 }
+
 
 function loop() {
 	setTimeout(function() {
@@ -473,9 +523,14 @@ function loop() {
 	movePlayer();
 	drawEntities();
 	drawPopups();
+	var thisLoop = new Date;
+    var fps = 1000 / (thisLoop - lastLoop);
+    lastLoop = thisLoop;
 	context.drawImage(cursor,mouse.x,mouse.y,16,16);
 	context.fillStyle = "#ffff00";
-	context.fillText("Time: " + Math.floor(time) + " tick: " + tick,10,450);
+	context.fillText("FPS: " + Math.floor(fps) + " Time: " + Math.floor(time) + " tick: " + tick,10,450);
+	context.fillText("Gold: " + gold,10,460);
+	
 	//requestAnimationFrame(loop);
 	}, 1000 / 60);
 }
