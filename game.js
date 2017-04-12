@@ -4,6 +4,7 @@ var context = c.getContext("2d");
 
 var time = 0;
 var tick = 0;
+var oldtick = 0;
 
 var gold = 0;
 var gravity = .3;
@@ -18,10 +19,14 @@ var dirt = new Image();
 var grass = new Image();
 var wood = new Image();
 var cursor = new Image();
+var fighting_icon = new Image();
 
 var stone_sheet = new Image();
 
-var moving = false;
+//sounds
+
+var sword_hit = new Audio('swordhit.wav');
+var sword_miss = new Audio('swordmiss.wav');
 
 var mouse = {
 	x: 0,
@@ -46,7 +51,7 @@ function Structure(name, array) {
 
 enemy = [];
 
-function Enemy(name,type,sprite,hp,x,y,xb,yb,moving,spd) {
+function Enemy(name,type,sprite,hp,x,y,xb,yb,moving,spd,roaming) {
 	this.name = name;
 	this.type = type;
 	this.sprite = sprite;
@@ -57,6 +62,7 @@ function Enemy(name,type,sprite,hp,x,y,xb,yb,moving,spd) {
 	this.yb = yb;
 	this.moving = false;
 	this.spd = spd;
+	this.roaming = false;
 	enemy.push(this);
 }
 
@@ -67,7 +73,7 @@ stone.src = "stone.png";
 stone_sheet.src = "stone_sheet.png";
 dirt.src = "dirt.png";
 grass.src = "grass.png";
-
+fighting_icon.src = "fighting_icon.png";
 spr_player.src = "player.png";
 player_sheet.src = "player_sheet.png";
 goblin_sheet.src = "goblin_sheet.png";
@@ -80,8 +86,9 @@ var player = {
 	y: 16,
 	xb: 16,
 	yb: 16,
-	spd: 2,
-	moving: false
+	spd: 1,
+	moving: false,
+	dmg: 1,
 }
 
 var key = {};
@@ -144,14 +151,26 @@ var s_house = new Structure("house",house);
 var s_smiley = new Structure("smiley",smiley);
 var s_statue = new Structure("statue",statue);
 
-var peggy = new Enemy("peggy","goblin",goblin_sheet,20,32,64,32,64,false,1);
+var peggy = new Enemy("peggy","goblin",goblin_sheet,4,16,32,16,32,false,1);
+var stabby = new Enemy("stabby","goblin",goblin_sheet,4,32,32,32,32,false,1);
+
+
+var map = [];
+var tileindex = [];
+
+generateMap();
+checkStructures();
+
+drawMap();
+keys = [];
+
+requestAnimationFrame(loop);
 
 function aiMovement() {
-	//get enemy
 	var i = 0;
 	for(i = 0; i < enemy.length; i++) {
-			//decide on a direction to go
-		var dir = Math.floor(Math.random() * 3); 
+			if(enemy[i].roaming) {
+		var dir = Math.floor(Math.random() * 29); 
 			switch(dir) {
 				case 0: //up
 					if((tile[getTile(enemy[i].x,enemy[i].y - 16)].walkable) && (!enemy[i].moving)){
@@ -177,43 +196,77 @@ function aiMovement() {
 						enemy[i].moving = true;
 					}
 					break;
+				default:
+					//do nothing
+					break;
 			}
+		}
 	}
-
 	
+}
+
+function combat() {
+	for(e = 0; e < enemy.length; e++) {
+		if((enemy[e].x >= player.x - 24) && (enemy[e].x <= player.x + 24)){
+			if((enemy[e].y >= player.y - 24) && (enemy[e].y <= player.y + 24)){
+				//there is an enemy near!
+				enemy[e].roaming = false;
+				var hit = Math.floor(Math.random() * 2);
+				switch(hit) {
+					case 0:
+						//hit!
+						
+						sword_hit.play();
+						enemy[e].hp -= player.dmg;
+						console.log("hit! remaining hp: " + enemy[e].hp);
+						if(enemy[e].hp <= 0) {
+							delete enemy[e].name;
+							enemy.splice(e,1);
+
+						}
+						break;
+					case 1:
+						//miss..
+						console.log("miss.. remaining hp: " + enemy[e].hp);
+						sword_miss.play();
+						break;
+				}
+			} else {
+			enemy[e].roaming = true;
+			}
+		} else {
+			enemy[e].roaming = true;
+		}
+	} 
 }
 
 function playerInput() {
 	if(key[38]) {
-		if((tile[getTile(player.x,player.y - 16)].walkable) && (moving == false)){
-				player.yb -= 16;
-				moving = true;
+		if((tile[getTile(player.x,player.y - 16)].walkable) && (player.moving == false)){
+				player.yb = player.y - 16;
+				player.moving = true;
 		}
 	}
 	if(key[40]) {
-		if((tile[getTile(player.x ,player.y + 16)].walkable) && (moving == false)){
-				player.yb += 16;
-				moving = true;
+		if((tile[getTile(player.x ,player.y + 16)].walkable) && (player.moving == false)){
+				player.yb = player.y + 16;
+				player.moving = true;
 		}
 	}
 	if(key[37]) {
-		if((tile[getTile(player.x - 16,player.y)].walkable) && (moving == false)){
-				player.xb -= 16;
-				moving = true;
+		if((tile[getTile(player.x - 16,player.y)].walkable) && (player.moving == false)){
+				player.xb = player.x - 16;
+				player.moving = true;
 		}
 	}
 	if(key[39]) {
-		if((tile[getTile(player.x + 16,player.y)].walkable) && (moving == false)){
-				player.xb += 16;
-				moving = true;
+		if((tile[getTile(player.x + 16,player.y)].walkable) && (player.moving == false)){
+				player.xb = player.x + 16;
+				player.moving = true;
 		}
 	}
 }
 
-var map = [];
-var tileindex = [];
-
-generateMap()
 function generateMap() {	
 	for(i = 0; i < 30; i++) {
 		map[i] = [];
@@ -242,11 +295,8 @@ function generateMap() {
 
 
 
-//map[7][11] = 4;
 
 
-//check for structures
-checkStructures();
 function checkStructures () {
 	for(vert = 0; vert < 480 / 16; vert++) {
 		for(horiz = 0; horiz < 640 / 16; horiz++) {
@@ -339,8 +389,7 @@ function getTileIndex(x,y) {
 return result;
 }
 
-drawMap();
-keys = [];
+
 
 function movePlayer() {
 	if(player.x != player.xb) {
@@ -350,7 +399,7 @@ function movePlayer() {
 		player.y += player.spd * Math.sign(player.yb - player.y);
 	} 
 	if(player.x == player.xb && player.y == player.yb) {
-		moving = false;
+		player.moving = false;
 	}
 	for(i = 0; i < enemy.length; i++) {
 		if(enemy[i].x != enemy[i].xb) {
@@ -369,29 +418,24 @@ function drawEntities() {
 		context.drawImage(player_sheet,(tick % 4) * 16,0,16,16,player.x,player.y,16,16);
 		for(i = 0; i < enemy.length; i++) {
 			context.drawImage(enemy[i].sprite,(tick % 4) * 16,0,16,16,enemy[i].x,enemy[i].y,16,16)
+			if(enemy[i].roaming == false) {
+				context.drawImage(fighting_icon,enemy[i].x,enemy[i].y,8,8)
+			}
 		}
 
 	//context.drawImage(player.sprite,player.x,player.y,16,16);
 }
 
-
-
-
-
-
-//document.getElementById("gold1").style.visibility = "hidden";
-//document.getElementById("gold2").style.visibility = "hidden";
-
-
-requestAnimationFrame(loop);
-
-
 function loop() {
-	time += 1;
-	if (time % 30 == 0) {
+	setTimeout(function() {
+	requestAnimationFrame(loop);
+	time += (1000/60);
+	if (time % 600 == 0) {
+		oldtick = tick;
 		tick += 1;
 		time = 0;
 		aiMovement();
+		combat();
 	}
 	context.clearRect(0, 0, c.width, c.height);
 	drawMap();
@@ -400,6 +444,7 @@ function loop() {
 	movePlayer();
 	drawEntities();
 	context.drawImage(cursor,mouse.x,mouse.y,16,16);
-	context.fillText("Time: " + time + " tick: " + tick,10,30);
-	requestAnimationFrame(loop);
+	context.fillText("Time: " + Math.floor(time) + " tick: " + tick,10,30);
+	//requestAnimationFrame(loop);
+	}, 1000 / 60);
 }
