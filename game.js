@@ -27,6 +27,8 @@ var cursor = new Image();
 var fighting_icon = new Image();
 
 var health_potion = new Image();
+var mana_potion = new Image();
+var goldi = new Image();
 
 var stone_sheet = new Image();
 var dirt_sheet = new Image();
@@ -57,6 +59,17 @@ function Structure(name, array) {
 	this.sprite = spr_player;
 	this.array = array;
 	tile.push(this);
+}
+
+item = [];
+
+function Item(name,category,sprite,stackable,worth) {
+	this.name = name;
+	this.category = category;
+	this.sprite = sprite;
+	this.stackable = stackable;
+	this.worth = worth;
+	item.push(this);
 }
 
 enemy = [];
@@ -103,6 +116,8 @@ player_sheet.src = "resources/entities/player_sheet.png";
 goblin_sheet.src = "resources/entities/goblin_sheet.png";
 goblin_death.src = "resources/entities/goblin_death.png";
 health_potion.src = "resources/items/potions/health_potion.png";
+mana_potion.src = "resources/items/potions/mana_potion.png";
+goldi.src = "resources/items/potions/peri_potion.png";
 var width = 640;
 var height = 480;
 
@@ -183,6 +198,37 @@ var s_statue = new Structure("statue",statue);
 
 //var peggy = new Enemy("peggy","goblin",goblin_sheet,4,16,32,16,32,false,1);
 //var stabby = new Enemy("stabby","goblin",goblin_sheet,4,32,32,32,32,false,1);
+new Item("gold","gold",goldi,true,-1);
+new Item("Health Potion","potion",health_potion,true,50);
+new Item("Mana Potion","potion",mana_potion,true,50);
+
+inventory = [
+	["",0],
+	["",0],
+	["",0],
+	["",0],
+	["",0]
+
+
+
+];
+
+
+function addItemToInventory(item) {
+	for(i = 0; i < inventory.length; i++) { //find first empty space
+		console.log("finding...");
+		if(inventory[i][0] == "") {
+			console.log("found! replacing!");
+			inventory[i][0] = item;
+			inventory[i][1] = 1;
+			console.log("successful?");
+		}
+		break;
+	}
+}
+
+//TODO: MAKE SURE THERE'S SPACE
+
 
 
 var map = [];
@@ -195,10 +241,8 @@ generateMonsters();
 drawMap();
 keys = [];
 
-var gameTimer = window.setInterval(function() {
 
-    loop();
-}, 1000 / 60);
+requestAnimationFrame(loop);
 
 function aiMovement() {
 	for(d = 0; d < enemy.length; d++) {
@@ -361,16 +405,16 @@ function playerInput() {
 		}
 	}
 	for(a = 0; a < enemy.length; a++) {
-			if((enemy[a].x == player.x + 16) && (enemy[a].y == player.y)) {
+			if((enemy[a].x == player.x + 16) && (enemy[a].y == player.y) && (player.xb == player.x + 16)) {
 				player.xb = player.x;
 			}
-			if((enemy[a].x == player.x - 16) && (enemy[a].y == player.y)){
+			if((enemy[a].x == player.x - 16) && (enemy[a].y == player.y) && (player.xb == player.x - 16)){
 				player.xb = player.x;
 			}
-			if((enemy[a].y == player.y - 16) && (enemy[a].x == player.x)){
+			if((enemy[a].y == player.y - 16) && (enemy[a].x == player.x) && (player.yb == player.y - 16)){
 				player.yb = player.y;
 			}
-			if((enemy[a].y == player.y + 16) && (enemy[a].x == player.x)){
+			if((enemy[a].y == player.y + 16) && (enemy[a].x == player.x) && (player.yb == player.y + 16)){
 				player.yb = player.y;
 			}
 		}
@@ -620,5 +664,5 @@ function loop() {
 	for(i = 0; i < chat.length; i++) {
 		context.fillText(chat[i],4, (480 + 150) - 4 - (i * 10));
 	}
-	context.drawImage(health_potion,64,64);
+	requestAnimationFrame(loop);
 }
