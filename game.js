@@ -14,6 +14,7 @@ var spr_player = new Image();
 var player_sheet = new Image();
 
 var goblin_sheet = new Image();
+var goblin_death = new Image();
 
 var stone = new Image();
 var dirt = new Image();
@@ -64,6 +65,8 @@ function Enemy(name,type,sprite,hp,x,y,moving,spd,roaming) {
 	this.moving = false;
 	this.spd = spd;
 	this.roaming = roaming;
+	this.dying = false;
+	this.deathtimer = 0;
 	enemy.push(this);
 }
 
@@ -89,6 +92,7 @@ fighting_icon.src = "fighting_icon.png";
 spr_player.src = "player.png";
 player_sheet.src = "player_sheet.png";
 goblin_sheet.src = "goblin_sheet.png";
+goblin_death.src = "goblin_death.png";
 var width = 640;
 var height = 480;
 
@@ -179,12 +183,25 @@ generateMonsters();
 drawMap();
 keys = [];
 
-requestAnimationFrame(loop);
+var gameTimer = window.setInterval(function() {
+
+    loop();
+}, 1000 / 60);
 
 function aiMovement() {
+	for(d = 0; d < enemy.length; d++) {
+		if(enemy[d].dying) {
+			enemy[d].deathtimer += 1;
+			if(enemy[d].deathtimer == 4) {
+					delete enemy[d].name;
+					enemy.splice(d,1);
+					gold += Math.floor(Math.random() * 9);
+			}
+		}
+	}
 	var i = 0;
 	for(i = 0; i < enemy.length; i++) {
-			if(enemy[i].roaming) {
+			if(enemy[i].roaming && !enemy[i].dying) {
 		var dir = Math.floor(Math.random() * 29); 
 			switch(dir) {
 				case 0: //up
@@ -236,7 +253,7 @@ function aiMovement() {
 
 function combat() {
 	for(e = 0; e < enemy.length; e++) {
-		if((enemy[e].x >= player.x - 24) && (enemy[e].x <= player.x + 24)){
+		if((enemy[e].x >= player.x - 24) && (enemy[e].x <= player.x + 24) && (enemy[e].dying == false)){
 			if((enemy[e].y >= player.y - 24) && (enemy[e].y <= player.y + 24)){
 				//there is an enemy near!
 				enemy[e].roaming = false;
@@ -249,9 +266,7 @@ function combat() {
 						//console.log("hit! remaining hp: " + enemy[e].hp);
 						new Popup("1",enemy[e].x + 6,enemy[e].y,30,"#ff0000",true);
 						if(enemy[e].hp <= 0) {
-							delete enemy[e].name;
-							enemy.splice(e,1);
-							gold += Math.floor(Math.random() * 9);
+							enemy[e].dying = true;
 						}
 						break;
 					case 1:
@@ -474,7 +489,12 @@ function movePlayer() {
 function drawEntities() {
 		context.drawImage(player_sheet,(tick % 4) * 16,0,16,16,player.x,player.y,16,16);
 		for(i = 0; i < enemy.length; i++) {
-			context.drawImage(enemy[i].sprite,(tick % 4) * 16,0,16,16,enemy[i].x,enemy[i].y,16,16)
+			if(!enemy[i].dying) {
+				context.drawImage(enemy[i].sprite,(tick % 4) * 16,0,16,16,enemy[i].x,enemy[i].y,16,16);
+			} else {
+				context.drawImage(goblin_death,(enemy[i].deathtimer) * 16,0,16,16,enemy[i].x,enemy[i].y,16,16);
+			}
+			
 			if(enemy[i].roaming == false) {
 				//context.drawImage(fighting_icon,enemy[i].x,enemy[i].y,8,8)
 				context.fillStyle = "#000000";
@@ -494,7 +514,7 @@ function drawPopups() {
 		//context.strokeText(popup[i].text,popup[i].x,popup[i].y);
 		context.fillText(popup[i].text,popup[i].x,popup[i].y);
 		popup[i].timer -= 1;
-		if(popup[i].moving) {
+		if(popup[i].moves) {
 			popup[i].y -= .25;
 		}	
 		if(popup[i].timer == 0) {
@@ -506,8 +526,6 @@ function drawPopups() {
 
 
 function loop() {
-	setTimeout(function() {
-	requestAnimationFrame(loop);
 	time += (1000/60);
 	if (time % 600 == 0) {
 		oldtick = tick;
@@ -518,7 +536,6 @@ function loop() {
 	}
 	context.clearRect(0, 0, c.width, c.height);
 	drawMap();
-	//input();
 	playerInput();
 	movePlayer();
 	drawEntities();
@@ -530,7 +547,4 @@ function loop() {
 	context.fillStyle = "#ffff00";
 	context.fillText("FPS: " + Math.floor(fps) + " Time: " + Math.floor(time) + " tick: " + tick,10,450);
 	context.fillText("Gold: " + gold,10,460);
-	
-	//requestAnimationFrame(loop);
-	}, 1000 / 60);
 }
