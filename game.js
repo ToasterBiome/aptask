@@ -26,6 +26,8 @@ var wood = new Image();
 var cursor = new Image();
 var fighting_icon = new Image();
 
+var health_potion = new Image();
+
 var stone_sheet = new Image();
 var dirt_sheet = new Image();
 
@@ -33,8 +35,8 @@ var dirt_sheet = new Image();
 
 var chat = ["","","","","","","","","","","","",""];
 
-var sword_hit = new Audio('swordhit.wav');
-var sword_miss = new Audio('swordmiss.wav');
+var sword_hit = new Audio('resources/sounds/swordhit.wav');
+var sword_miss = new Audio('resources/sounds/swordmiss.wav');
 
 var mouse = {
 	x: 0,
@@ -73,6 +75,7 @@ function Enemy(name,type,sprite,hp,x,y,moving,spd,roaming) {
 	this.roaming = roaming;
 	this.dying = false;
 	this.deathtimer = 0;
+	this.dmg = 1;
 	enemy.push(this);
 }
 
@@ -88,18 +91,18 @@ function Popup(text,x,y,timer,color,moves) {
 	popup.push(this);
 }
 
-cursor.src = "cursor.png";
-wood.src = "wood.png";
-stone.src = "stone.png";
-stone_sheet.src = "stone_sheet.png";
-dirt.src = "dirt.png";
-dirt_sheet.src = "sand_sheet.png";
-grass.src = "grass.png";
-fighting_icon.src = "fighting_icon.png";
-spr_player.src = "player.png";
-player_sheet.src = "player_sheet.png";
-goblin_sheet.src = "goblin_sheet.png";
-goblin_death.src = "goblin_death.png";
+cursor.src = "./resources/cursor.png";
+wood.src = "resources/tiles/wood.png";
+stone.src = "resources/tiles/stone.png";
+stone_sheet.src = "resources/tiles/stone_sheet.png";
+dirt.src = "resources/tiles/dirt.png";
+dirt_sheet.src = "resources/tiles/sand_sheet.png";
+grass.src = "resources/tiles/grass.png";
+fighting_icon.src = "resources/fighting_icon.png";
+player_sheet.src = "resources/entities/player_sheet.png";
+goblin_sheet.src = "resources/entities/goblin_sheet.png";
+goblin_death.src = "resources/entities/goblin_death.png";
+health_potion.src = "resources/items/potions/health_potion.png";
 var width = 640;
 var height = 480;
 
@@ -112,6 +115,8 @@ var player = {
 	spd: 1,
 	moving: false,
 	dmg: 1,
+	hp: 10,
+	dying: false
 }
 
 var key = {};
@@ -262,6 +267,37 @@ function aiMovement() {
 
 function combat() {
 	for(e = 0; e < enemy.length; e++) {
+		if((player.x >= enemy[e].x - 24) && (player.x <= enemy[e].x + 24) && (player.dying == false) && (enemy[e].dying == false)){
+			if((player.y >= enemy[e].y - 24) && (player.y <= enemy[e].y + 24)){
+				var hit = Math.floor(Math.random() * 4);
+				switch(hit) {
+					case 0:
+						//hit!
+						sword_hit.play();
+						player.hp -= enemy[e].dmg;
+						addLine("Hit player for " + enemy[e].dmg + " damage!");
+						if(player.hp < 0) {
+							player.hp = 0;
+						}
+						new Popup("1",player.x + 6,player.y,30,"#ff0000",true);
+						if(player.hp <= 0) {
+							player.dying = true;
+							addLine("you have died!");
+						}
+						break;
+					case 1:
+					case 2:
+					case 3:
+						//miss..
+						//console.log("miss.. remaining hp: " + enemy[e].hp);
+						addLine("Missed player!");
+						new Popup("0",player.x + 6,player.y,30,"#0000ff",true);
+						sword_miss.play();
+						break;
+				}
+			}
+		}
+
 		if((enemy[e].x >= player.x - 24) && (enemy[e].x <= player.x + 24) && (enemy[e].dying == false)){
 			if((enemy[e].y >= player.y - 24) && (enemy[e].y <= player.y + 24)){
 				//there is an enemy near!
@@ -273,7 +309,10 @@ function combat() {
 						sword_hit.play();
 						enemy[e].hp -= player.dmg;
 						addLine("Hit " + enemy[e].type +  " for " + player.dmg + " damage!");
-						new Popup("1",enemy[e].x + 6,enemy[e].y,30,"#ff0000",true);
+						if(enemy[e].hp < 0) {
+							enemy[e].hp = 0;
+						}
+						new Popup(player.dmg,enemy[e].x + 6,enemy[e].y,30,"#ff0000",true);
 						if(enemy[e].hp <= 0) {
 							enemy[e].dying = true;
 							addLine(enemy[e].type + " has died!");
@@ -368,7 +407,7 @@ function generateMonsters() {
 		for(j = 0; j < 40; j++) {
 			if(tile[map[i][j]].walkable) {
 				var rand = Math.random();
-				if(rand > .99) {
+				if(rand > .95) {
 					new Enemy("","goblin",goblin_sheet,4,j * 16,i * 16,false,1);
 				}
 			}
@@ -500,6 +539,10 @@ function movePlayer() {
 
 function drawEntities() {
 		context.drawImage(player_sheet,(tick % 4) * 16,0,16,16,player.x,player.y,16,16);
+				context.fillStyle = "#000000";
+				context.fillRect(player.x,player.y + 14,16,2);
+				context.fillStyle = "#00FF00";
+				context.fillRect(player.x,player.y + 14,(player.hp / 10) * 16,2);
 		for(i = 0; i < enemy.length; i++) {
 			if(!enemy[i].dying) {
 				context.drawImage(enemy[i].sprite,(tick % 4) * 16,0,16,16,enemy[i].x,enemy[i].y,16,16);
@@ -577,4 +620,5 @@ function loop() {
 	for(i = 0; i < chat.length; i++) {
 		context.fillText(chat[i],4, (480 + 150) - 4 - (i * 10));
 	}
+	context.drawImage(health_potion,64,64);
 }
