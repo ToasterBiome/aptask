@@ -1,5 +1,8 @@
 var c = document.getElementById("gameCanvas");
 var context = c.getContext("2d");
+c.width = 960 * 2;
+c.height = 680 * 2;
+context.font = "12px Monospace";
 
 var lastLoop = new Date;
 
@@ -24,8 +27,11 @@ var cursor = new Image();
 var fighting_icon = new Image();
 
 var stone_sheet = new Image();
+var dirt_sheet = new Image();
 
 //sounds
+
+var chat = ["","","","","","","","","","","","",""];
 
 var sword_hit = new Audio('swordhit.wav');
 var sword_miss = new Audio('swordmiss.wav');
@@ -87,6 +93,7 @@ wood.src = "wood.png";
 stone.src = "stone.png";
 stone_sheet.src = "stone_sheet.png";
 dirt.src = "dirt.png";
+dirt_sheet.src = "sand_sheet.png";
 grass.src = "grass.png";
 fighting_icon.src = "fighting_icon.png";
 spr_player.src = "player.png";
@@ -130,7 +137,7 @@ document.addEventListener('mousedown', function(event) {
 
 var grassTile = new Tile("grassTile",grass,true);
 var stoneTile = new Tile("stoneTile",stone_sheet,false);
-var dirtTile = new Tile("dirtTile",dirt,true);
+var dirtTile = new Tile("dirtTile",dirt_sheet,true);
 var woodTile = new Tile("woodTile",wood,true);
 
 var house = [
@@ -195,7 +202,9 @@ function aiMovement() {
 			if(enemy[d].deathtimer == 4) {
 					delete enemy[d].name;
 					enemy.splice(d,1);
-					gold += Math.floor(Math.random() * 9);
+					var ag = Math.floor(Math.random() * 9);
+					gold += ag;
+					addLine("Loot: " + ag + " gold");
 			}
 		}
 	}
@@ -263,15 +272,17 @@ function combat() {
 						//hit!
 						sword_hit.play();
 						enemy[e].hp -= player.dmg;
-						//console.log("hit! remaining hp: " + enemy[e].hp);
+						addLine("Hit " + enemy[e].type +  " for " + player.dmg + " damage!");
 						new Popup("1",enemy[e].x + 6,enemy[e].y,30,"#ff0000",true);
 						if(enemy[e].hp <= 0) {
 							enemy[e].dying = true;
+							addLine(enemy[e].type + " has died!");
 						}
 						break;
 					case 1:
 						//miss..
 						//console.log("miss.. remaining hp: " + enemy[e].hp);
+						addLine("Missed " + enemy[e].type +  "!");
 						new Popup("0",enemy[e].x + 6,enemy[e].y,30,"#0000ff",true);
 						sword_miss.play();
 						break;
@@ -387,29 +398,30 @@ function checkStructures () {
 	}
 }
 
-setIndex();
-function setIndex() {
+setIndex(1);
+setIndex(2);
+function setIndex(tile_id) {
 for(a = 0; a < 480 / 16; a++) {
 	//console.log("scanning vertical");
 	for(b = 0; b < 640 / 16; b++) {
 		//console.log("scanning horizontal");
-		if(getTile((b * 16),(a * 16)) == 1) {
+		if(getTile((b * 16),(a * 16)) == tile_id) {
 			//console.log("found tile @" + b + ", " + a);
 			var num = 0;
 			
-			if(getTile(b*16,a*16-16) == 1) {
+			if(getTile(b*16,a*16-16) == tile_id) {
 				//console.log("above");
 				num += 1;
 			}
-			if(getTile(b*16,a*16+16) == 1) {
+			if(getTile(b*16,a*16+16) == tile_id) {
 				//console.log("below");
 				num += 4;
 			}
-			if(getTile(b*16-16,a*16) == 1) {
+			if(getTile(b*16-16,a*16) == tile_id) {
 				//console.log("left");
 				num += 2;
 			}
-			if(getTile(b*16+16,a*16) == 1) {
+			if(getTile(b*16+16,a*16) == tile_id) {
 				//console.log("right");
 				num += 8;
 			}
@@ -509,7 +521,6 @@ function drawEntities() {
 
 function drawPopups() {
 	for(i = 0; i < popup.length; i++) {
-		context.font = "8px Sans-serif"
 		context.fillStyle = popup[i].color;
 		//context.strokeText(popup[i].text,popup[i].x,popup[i].y);
 		context.fillText(popup[i].text,popup[i].x,popup[i].y);
@@ -521,6 +532,15 @@ function drawPopups() {
 			delete popup[i];
 			popup.splice(i,1);
 		}
+	}
+}
+
+function addLine(line) {
+	for(i = 12; i > -1; i--) {
+			chat[i] = chat[i - 1]
+			if(i - 1 == -1) {
+				chat[i] = line;
+			}
 	}
 }
 
@@ -539,6 +559,7 @@ function loop() {
 	playerInput();
 	movePlayer();
 	drawEntities();
+	context.font = "12px Monospace";
 	drawPopups();
 	var thisLoop = new Date;
     var fps = 1000 / (thisLoop - lastLoop);
@@ -547,4 +568,13 @@ function loop() {
 	context.fillStyle = "#ffff00";
 	context.fillText("FPS: " + Math.floor(fps) + " Time: " + Math.floor(time) + " tick: " + tick,10,450);
 	context.fillText("Gold: " + gold,10,460);
+	context.fillStyle = "#333333";
+	context.fillRect(0,480,640,150);
+	context.fillStyle = "#000000";
+	context.fillRect(640,0,320,480 + 150);
+	context.fillStyle = "#ffffff";
+	context.font = "italic 12px Monospace";
+	for(i = 0; i < chat.length; i++) {
+		context.fillText(chat[i],4, (480 + 150) - 4 - (i * 10));
+	}
 }
